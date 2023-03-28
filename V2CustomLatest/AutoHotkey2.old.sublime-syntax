@@ -1,7 +1,7 @@
 %YAML 1.2
 ---
 # See http://www.sublimetext.com/docs/syntax.html
-name: AutoHotkey2WFKN
+name: AutoHotkey2
 
 file_extensions:
   - ahk
@@ -188,9 +188,9 @@ contexts:
     # - include: block
     # - include: group
     # - include: brackets
-    - include: hotkey           # need
+    - include: hotkey           
     - include: directives
-    - include: hotstring        # neeeed
+    - include: hotstring        
 
   storage-modifier:
     - match: \b(?i:global|static|local)\b
@@ -223,48 +223,45 @@ contexts:
   generic-block:
     - match: \{
       scope: punctuation.section.block.begin.ahk2
-      push: generic-block-body
+      push:
+        - meta_scope: meta.block.ahk2
+        - match: \}
+          scope: punctuation.section.block.end.ahk2
+          pop: 1
+        - include: expression
     - include: stray-brace
-
-  generic-block-body:
-    - meta_scope: meta.block.ahk2
-    - match: \}
-      scope: punctuation.section.block.end.ahk2
-      pop: 1
-    - include: expression
 
   generic-group:
     - match: \(
       scope: punctuation.section.group.begin.ahk2
-      push: generic-group-body
+      push:
+        - meta_scope: meta.group.ahk2
+        - match: \)
+          scope: punctuation.section.group.end.ahk2
+          pop: 1
+        - include: expression
     - include: stray-group
-
-  generic-group-body:
-    - meta_scope: meta.group.ahk2
-    - match: \)
-      scope: punctuation.section.group.end.ahk2
-      pop: 1
-    - include: expression
 
   generic-brackets:
     - match: \[
       scope: punctuation.section.brackets.begin.ahk2
-      push: generic-brackets-body
+      push:
+        - meta_scope: meta.brackets.ahk2
+        - match: \]
+          scope: punctuation.section.brackets.end.ahk2
+          pop: 1
+        - include: expression
     - include: stray-bracket
-
-  generic-brackets-body:
-    - meta_scope: meta.brackets.ahk2
-    - match: \]
-      scope: punctuation.section.brackets.end.ahk2
-      pop: 1
-    - include: expression
 
 ################################[ ASSIGNMENTS ]#################################
 
   variables:
     - match: '\b{{identifier}}\b(?=\.)'
       scope: entity.name.class.ahk2
-      push: object-variable
+      push:
+        - include: variables
+        - match: ''
+          pop: 1
     - match: '(\.)({{identifier}}\b)(?=\()'
       captures:
         1: punctuation.accessor.dot.ahk2
@@ -277,30 +274,21 @@ contexts:
         # 2: variable.language.ahk2
         2: storage.type.trait.ahk2
     - match: '(?=(?<!\.)\b{{identifier}}\b)'
-      push: generic-variable
-
-  object-variable:
-    - include: variables
-    - match: ''
-      pop: 1
-
-  generic-variable:
-    - meta_scope: variable.ahk2
-    - match: (?<!\.)\b{{identifier}}\b
-      scope: variable.user.generic.ahk2
-      pop: 1
-    - include: pop-out
+      push:
+        - meta_scope: variable.ahk2
+        - match: (?<!\.)\b{{identifier}}\b
+          scope: variable.user.generic.ahk2
+          pop: 1
+        - include: pop-out
 
   variables-CAPS:
     - match: '(?=(?<!\.)\b{{identifier_CAPS}}\b)'
-      push: caps-variable
-
-  caps-variable:
-    - meta_scope: variable.user.ahk2
-    - match: (?<!\.)\b{{identifier_CAPS}}\b
-      scope: entity.name.tag.user.constant.ahk2
-      pop: 1
-    - include: pop-out
+      push:
+        - meta_scope: variable.user.ahk2
+        - match: (?<!\.)\b{{identifier_CAPS}}\b
+          scope: entity.name.tag.user.constant.ahk2
+          pop: 1
+        - include: pop-out
 
 #  variables-with-CAPS-constants:
 #    - match: '\b{{identifier}}\b(?=\.)'
@@ -370,22 +358,24 @@ contexts:
 ################################[ LINE OF CODE ]################################
 
   control-keywords:
-    - include: if-else-keywords
-    - match: \b(?i:for)\b
-      scope: keyword.control.loop.for-in.ahk2
-      push: for-in-block-start
+    - match: \b(?i:if)\b
+      scope: keyword.control.conditional.if.ahk2
+      push:
+        - match: (?=.*\{\s*$)
+          push: if-block
+        - include: else-pop
+    - match: \b(?i:else)\b
+      scope: keyword.control.conditional.else.ahk2
     - match: \b(?i:for)\b
       scope: keyword.control.loop.for.ahk2
     - match: \b(?i:in)\b
       scope: keyword.control.loop.in.ahk2
-    # - match: \b(?i:loop)\b
-    #   scope: keyword.control.loop.loop.ahk2
-    #   push: loop-block-start
-    - include: loop-keywords
-    - match: \b(?i:until)\b
-      scope: keyword.control.loop.repeat-until.until.ahk2
     - match: \b(?i:while)\b
       scope: keyword.control.loop.while.ahk2
+    - match: \b(?i:loop)\b
+      scope: keyword.control.loop.repeat-until.loop.ahk2
+    - match: \b(?i:until)\b
+      scope: keyword.control.loop.repeat-until.until.ahk2
     - match: \b(?i:break)\b
       scope: keyword.control.flow.break.ahk2
     - match: \b(?i:continue)\b
@@ -417,517 +407,17 @@ contexts:
         3: storage.type.class.ahk2
       push: class-block
 
-  if-else-keywords:
-    - match: \b((?i:else))\s+((?i:if))\b(?!.*\{.*$)
-      captures:
-        1: keyword.control.conditional.else-if.line.else.ahk2
-        2: keyword.control.conditional.else-if.line.if.ahk2
-      push: else-if-single-line
-    - match: \b(?i:if)\b(?!.*\{.*$)
-      scope: keyword.control.conditional.if.line.ahk2
-      push: if-single-line
-    - match: \b(?i:else)\b(?!.*\{.*$)
-      scope: keyword.control.conditional.else.line.ahk2
-      push: else-single-line
-    - match: \b((?i:else))\s+((?i:if))\b
-      captures:
-        1: keyword.control.conditional.else-if.else.ahk2
-        2: keyword.control.conditional.else-if.if.ahk2
-      push: else-if-block-start
-    - match: \b(?i:if)\b
-      scope: keyword.control.conditional.if.ahk2
-      push: if-block-start
-    - match: \b(?i:else)\b
-      scope: keyword.control.conditional.else.ahk2
-      push: else-block-start
-
-  loop-keywords:
-    - match: \b(?i:(loop)\s+(files))\b(?!.*\{.*$)
-      captures:
-        1: keyword.control.loop.line.files.loop.ahk2
-        2: keyword.control.loop.line.files.files.ahk2
-      push: loop-files-single-line
-    - match: \b(?i:(loop)\s+(parse))\b(?!.*\{.*$)
-      captures:
-        1: keyword.control.loop.line.parse.loop.ahk2
-        2: keyword.control.loop.line.parse.parse.ahk2
-      push: loop-parse-single-line
-    - match: \b(?i:(loop)\s+(read))\b(?!.*\{.*$)
-      captures:
-        1: keyword.control.loop.line.read.loop.ahk2
-        2: keyword.control.loop.line.read.read.ahk2
-      push: loop-read-single-line
-    - match: \b(?i:(loop)\s+(reg))\b(?!.*\{.*$)
-      captures:
-        1: keyword.control.loop.line.reg.loop.ahk2
-        2: keyword.control.loop.line.reg.reg.ahk2
-      push: loop-reg-single-line
-    - match: \b(?i:loop)\b(?=.*[^\{\s].*$)(?!.*\{.*$)
-      scope: keyword.control.loop.line.count.loop.ahk2
-      push: loop-count-single-line
-    - match: \b(?i:loop)\b(?!.*[^\{\s]\s*$|.*\{.*$)
-      scope: keyword.control.loop.line.infinite.loop.ahk2
-      push: loop-infinite-single-line
-    - match: \b(?i:(loop)\s+(files))\b
-      captures:
-        1: keyword.control.loop.block.files.loop.ahk2
-        2: keyword.control.loop.block.files.files.ahk2
-      push: loop-files-block-start
-    - match: \b(?i:(loop)\s+(parse))\b
-      captures:
-        1: keyword.control.loop.block.parse.loop.ahk2
-        2: keyword.control.loop.block.parse.parse.ahk2
-      push: loop-parse-block-start
-    - match: \b(?i:(loop)\s+(read))\b
-      captures:
-        1: keyword.control.loop.block.read.loop.ahk2
-        2: keyword.control.loop.block.read.read.ahk2
-      push: loop-read-block-start
-    - match: \b(?i:(loop)\s+(reg))\b
-      captures:
-        1: keyword.control.loop.block.reg.loop.ahk2
-        2: keyword.control.loop.block.reg.reg.ahk2
-      push: loop-reg-block-start
-    - match: \b(?i:loop)\b(?=.*[^\{\s].*$)
-      scope: keyword.control.loop.block.count.loop.ahk2
-      push: loop-count-block-start
-    - match: \b(?i:loop)\b(?!.*[^\{\s]\s*$)
-      scope: keyword.control.loop.block.infinite.loop.ahk2
-      push: loop-infinite-block-start
-
-  # loop-block-start:
-  #   - match: \b(?i:files)\b
-  #     scope: keyword.control.loop.files.ahk2
-  #     push: loop-files-block-start
-  #   - match: \b(?i:reg)\b
-  #     scope: keyword.control.loop.reg.ahk2
-  #     push: loop-reg-block-start
-  #   - match: (?=\s*\{\s*$)
-  #     push: loop-infinite-block-start
-  #   - include: else-pop
-
-  # loop-count-expression:
-  #   - include: expression
-
-  # loop-infinite-block-start:
-  #   - match: (?=\s*\{\s*$)
-  #     push: loop-infinite-block
-  #   - include: else-pop
-
-  # loop-count-block-start:
-  #   - include: loop-count-expression
-  #   - include: loop-count-block
-  # loop-reg-block-start:
-  #   - match: ''
-  #   - include: else-pop
-  # loop-files-block-start:
-  #   - match: ','
-  #     scope: punctuation.separator.parameters.loop.files.ahk2
-  #   - include: expression
-  #   - include: else-pop
-
-  if-single-line:
-    - match: ($)
-      pop: 1
-    - include: expression
 
   if-block:
     - match: (?=\s*\{\s*$)
-      push: if-block-body-pre
-    - include: stray-brace
-
-  if-block-start:
-    - match: (?=.*\{\s*$)
-      push: if-block
-    - include: else-pop
-
-  if-block-body-pre:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: if-block-body
-
-  if-block-body:
-    - meta_scope: meta.if.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  else-single-line:
-    - match: ($)
-      pop: 1
-    - include: expression
-
-  else-block:
-    - match: (?=\s*\{\s*$)
-      push: else-block-body-pre
-    - include: stray-brace
-
-  else-block-start:
-    - match: (?=.*\{\s*$)
-      push: else-block
-    - include: else-pop
-
-  else-block-body-pre:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: else-block-body
-
-  else-block-body:
-    - meta_scope: meta.else.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  else-if-single-line:
-    - match: ($)
-      pop: 1
-    - include: expression
-
-  else-if-block:
-    - match: (?=\s*\{\s*$)
-      push: else-if-block-body-pre
-    - include: stray-brace
-
-  else-if-block-start:
-    - match: (?=.*\{\s*$)
-      push: else-if-block
-    # - include: else-pop
-
-  else-if-block-body-pre:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: else-if-block-body
-
-  else-if-block-body:
-    - meta_scope: meta.else-if.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  for-in-single-line:
-    - match: ($)
-      pop: 1
-    - include: expression
-
-  for-in-block:
-    - match: \b(?i:in)\b
-      scope: keyword.control.in.ahk2
-    - match: (?=\s*\{\s*$)
-      push: for-in-block-body-pre
-    - include: variables
-    - include: expression
-    - include: stray-brace
-
-  for-in-block-start:
-    - match: (?=.*\{\s*$)
-      push: for-in-block
-    - include: else-pop
-
-  for-in-block-body-pre:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: for-in-block-body
-
-  for-in-block-body:
-    - meta_scope: meta.for-in.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-infinite-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-infinite-block-start:
-    - include: loop-infinite-block
-
-  loop-infinite-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-infinite-block-body
-    - include: stray-brace
-
-  loop-infinite-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-infinite-block-end
-
-  loop-infinite-block-end:
-    - meta_scope: meta.loop.infinite.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-count-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-count-block-start:
-    - match: (?=\s*\{\s*$)
-      push: loop-count-block
-    - include: loop-count-expression
-
-  loop-count-expression:
-    - meta_content_scope: meta.expression.loop.count.ahk2
-    - include: expression
-    - include: else-pop
-
-  loop-count-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-count-block-body
-    - include: stray-brace
-
-  loop-count-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-count-block-end
-
-  loop-count-block-end:
-    - meta_scope: meta.loop-count.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-files-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-files-block-start:
-    - match: (,)
-      scope: punctuation.separator.loop.files.ahk2
-      push: loop-files-block-pre
-    - include: else-pop
-
-  loop-files-block-pre:
-    - match: (?=\s*\{\s*$)
-      push: loop-files-block
-      pop: 1
-    - include: variables
-    - include: expression
-
-  loop-files-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-files-block-body
-    - include: stray-brace
-
-  loop-files-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-files-block-end
-
-  loop-files-block-end:
-    - meta_scope: meta.loop-files.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-parse-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-parse-block-start:
-    - match: (,)
-      scope: punctuation.separator.loop.parse.ahk2
-      push: loop-parse-block-pre
-    - include: else-pop
-
-  loop-parse-block-pre:
-    - match: (?=\s*\{\s*$)
-      push: loop-parse-block
-      pop: 1
-    - include: variables
-    - include: expression
-
-  loop-parse-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-parse-block-body
-    - include: stray-brace
-
-  loop-parse-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-parse-block-end
-
-  loop-parse-block-end:
-    - meta_scope: meta.loop-parse.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-reg-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-reg-block-start:
-    - match: (,)
-      scope: punctuation.separator.loop.reg.ahk2
-      push: loop-reg-block-pre
-    - include: else-pop
-
-  loop-reg-block-pre:
-    - match: (?=\s*\{\s*$)
-      push: loop-reg-block
-      pop: 1
-    - include: variables
-    - include: expression
-
-  loop-reg-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-reg-block-body
-    - include: stray-brace
-
-  loop-reg-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-reg-block-end
-
-  loop-reg-block-end:
-    - meta_scope: meta.loop-reg.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  loop-read-single-line:
-    - match: $
-      pop: 2
-    - include: expression
-
-  loop-read-block-start:
-    - match: (,)
-      scope: punctuation.separator.loop.read.ahk2
-      push: loop-read-block-pre
-    - include: else-pop
-
-  loop-read-block-pre:
-    - match: (?=\s*\{\s*$)
-      push: loop-read-block
-      pop: 1
-    - include: variables
-    - include: expression
-
-  loop-read-block:
-    - match: (?=\s*\{\s*$)
-      push: loop-read-block-body
-    - include: stray-brace
-
-  loop-read-block-body:
-    - match: '\s*\{\s*$'
-      scope: punctuation.section.braces.begin.ahk2
-      push: loop-read-block-end
-
-  loop-read-block-end:
-    - meta_scope: meta.loop-read.block.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 4
-    - include: expression
-
-  while-block-start:
-    - match: ''
-
-  while-block:
-    - match: (?=\s*\{\s*$)
       push:
         - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
+          scope: punctuation.section.braces.begin
           push:
-          - meta_scope: meta.while.block.ahk2
+          - meta_scope: meta.if.block.ahk2
           - match: \}
             scope: punctuation.section.braces.end.ahk2
-            pop: 4
-          - include: expression
-    - include: stray-brace
-
-  repeat-block-start:
-    - match: ''
-
-  repeat-block:
-    - match: (?=\s*\{\s*$)
-      push:
-        - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
-          push:
-          - meta_scope: meta.repeat.block.ahk2
-          - match: \}
-            scope: punctuation.section.braces.end.ahk2
-            pop: 4
-          - include: expression
-    - include: stray-brace
-
-  try-block-start:
-    - match: ''
-
-  try-block:
-    - match: (?=\s*\{\s*$)
-      push:
-        - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
-          push:
-          - meta_scope: meta.try.block.ahk2
-          - match: \}
-            scope: punctuation.section.braces.end.ahk2
-            pop: 4
-          - include: expression
-    - include: stray-brace
-
-  catch-block-start:
-    - match: ''
-
-  catch-block:
-    - match: (?=\s*\{\s*$)
-      push:
-        - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
-          push:
-          - meta_scope: meta.catch.block.ahk2
-          - match: \}
-            scope: punctuation.section.braces.end.ahk2
-            pop: 4
-          - include: expression
-    - include: stray-brace
-
-  finally-block-start:
-    - match: ''
-
-  finally-block:
-    - match: (?=\s*\{\s*$)
-      push:
-        - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
-          push:
-          - meta_scope: meta.finally.block.ahk2
-          - match: \}
-            scope: punctuation.section.braces.end.ahk2
-            pop: 4
-          - include: expression
-    - include: stray-brace
-
-  switch-block-start:
-    - match: ''
-
-  switch-block:
-    - match: (?=\s*\{\s*$)
-      push:
-        - match: '\s*\{\s*$'
-          scope: punctuation.section.braces.begin.ahk2
-          push:
-          - meta_scope: meta.switch.block.ahk2
-          - match: \}
-            scope: punctuation.section.braces.end.ahk2
-            pop: 4
+            pop: 3
           - include: expression
     - include: stray-brace
 
@@ -935,17 +425,14 @@ contexts:
 
   class-block:
     - match: \{
-      scope: punctuation.section.braces.begin.ahk2
-      push: class-block-body
+      scope: punctuation.section.braces.begin
+      push:
+        - meta_scope: meta.class.body.ahk2
+        - match: \}
+          scope: punctuation.section.braces.end.ahk2
+          pop: 2
+        - include: script
     - include: stray-brace
-
-  class-block-body:
-    - meta_scope: meta.class.body.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 2
-    - include: script
-
 
 
 ##################################[ FUNCTION ]##################################
@@ -963,30 +450,26 @@ contexts:
   function-arguments:
     - match: \(
       scope: punctuation.section.group.begin
-      push: function-arguments-body
+      push:
+        - meta_scope: meta.parameters.ahk2
+        - match: \)
+          scope: punctuation.section.group.end.ahk2
+          pop: 2
+        - include: expression
     - include: stray-group
-
-  function-arguments-body:
-    - meta_scope: meta.parameters.ahk2
-    - match: \)
-      scope: punctuation.section.group.end.ahk2
-      pop: 2
-    - include: expression
 
   function-block:
     - match: (?!.*\{)
       pop: 1
     - match: \{
-      scope: punctuation.section.braces.begin.ahk2
-      push: function-block-body
+      scope: punctuation.section.braces.begin
+      push:
+        - meta_scope: meta.function.body.ahk2
+        - match: \}
+          scope: punctuation.section.braces.end.ahk2
+          pop: 2
+        - include: expression
     - include: stray-brace
-
-  function-block-body:
-    - meta_scope: meta.function.body.ahk2
-    - match: \}
-      scope: punctuation.section.braces.end.ahk2
-      pop: 2
-    - include: expression
 
 
 ##################################[ PROPERTY ]##################################
@@ -1005,7 +488,7 @@ contexts:
         - match: \b(?i:set)\b
           scope: keyword.declaration.setter.ahk2
           push: setter-block
-        - match: ^\s*{{identifier}}\b
+        - match: \b{{identifier}}\b
           scope: entity.other.attribute-name.ahk2
           push: property-block
         - match: ''
@@ -1087,7 +570,7 @@ contexts:
         6: keyword.context.hotkey.ahk2
         7: punctuation.definition.hotkey.ahk2
         8: keyword.context.hotkey.ahk2
-
+    
 
 #################################[ SECTIONS ]###################################
 
@@ -1148,29 +631,23 @@ contexts:
 
   literal-constants:
     - match: (?=\b(?i:true|false)\b)
-      push: literal-constants-boolean
+      push:
+        - meta_scope: constant.language.ahk2
+        - match: \b(?i:true|false)\b
+          scope: constant.language.boolean.ahk2
+        - include: pop-out
     - match: (?=\b(?i:this|thishotkey)\b)
-      push: literal-constants-this
+      push:
+        - meta_scope: constant.language.ahk2
+        - match: \b(?i:this|thishotkey)\b
+          scope: variable.language.hidden.ahk2
+        - include: pop-out
     - match: (?=\b(?i:value)\b)
-      push: literal-constants-value
-
-  literal-constants-boolean:
-    - meta_scope: constant.language.ahk2
-    - match: \b(?i:true|false)\b
-      scope: constant.language.boolean.ahk2
-    - include: pop-out
-
-  literal-constants-this:
-    - meta_scope: constant.language.ahk2
-    - match: \b(?i:this|thishotkey)\b
-      scope: variable.language.hidden.ahk2
-    - include: pop-out
-
-  literal-constants-value:
-    - meta_scope: entity.name.tag.ahk2
-    - match: \b(?i:value)\b
-      scope: constant.language.value.ahk2
-    - include: pop-out
+      push:
+        - meta_scope: entity.name.tag.ahk2
+        - match: \b(?i:value)\b
+          scope: constant.language.value.ahk2
+        - include: pop-out
 
   literal-storage-mods:
     - match: (?i:(\bglobal\b)|(\blocal\b)|(\bstatic\b))
@@ -1322,8 +799,8 @@ contexts:
         1: meta.annotation.todo.line.ahk2
         2: meta.annotation.todo.indentifier markup.changed.ahk2 markup.italic.ahk2
         3: meta.annotation.todo.note markup.changed.ahk2
-    # - match: ([<>\-\=]{2,})*
-      # scope: meta.annotation.arrow-sequence.ahk2 markup.inserted.ahk2
+    - match: ([<>\-\=]{2,})*
+      scope: meta.annotation.arrow-sequence.ahk2 markup.inserted.ahk2
     - match: (^\s\*\*\s+(.*)$)
       captures:
         2: markup.warning.ahk2
